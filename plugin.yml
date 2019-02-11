@@ -1,0 +1,6 @@
+name: "ChatLoggerPlugin"
+description: "Every chat message that is sent on the server is saved"
+authors:
+  - "IronException"
+version: "1.0" # version of ur plugin
+mainClass: "Main" # CaSe SeNsItIvE
