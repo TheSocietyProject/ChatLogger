@@ -214,7 +214,6 @@ public class Main extends RePlugin implements SimpleListener {
     }
 }
 
-
 class Config extends Configuration {
     @ConfigSetting
     public int var_whatToDoWithSpam; // 0 does nothing, 1 removes it completely, 2 points to the msg that is repeated
@@ -224,8 +223,8 @@ class Config extends Configuration {
 
     @ConfigSetting
     public boolean var_saveAsFile;
-
-
+  
+  
     // v these are var configs for michu`s commit
     @ConfigSetting
     public boolean var_saveInDatabase;
