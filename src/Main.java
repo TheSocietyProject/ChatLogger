@@ -38,14 +38,36 @@ public class Main extends RePlugin implements SimpleListener {
     public void onPluginEnable() {
         executor.scheduleAtFixedRate(() -> {
             if (ReClient.ReClientCache.INSTANCE.playerListEntries.size() != 0) {
-                writeToFile();
+                handleData();
             }
-        }, 5L, 60L, TimeUnit.SECONDS);
+        }, 1L, 3L, TimeUnit.MINUTES);
+    }
+
+    public synchronized void handleData(){
+
+        if(CFG.var_saveAsFile)
+            writeToFile();
+
+        if(CFG.var_saveInDatabase)
+            saveInDatabase();
+
+        if(CFG.var_outputInDiscord)
+            outputInDiscord();
+
+    }
+
+    public void saveInDatabase(){
+        // TODO
+    }
+
+    public void outputInDiscord(){
+        // TODO
+
     }
 
     @Override
     public void onPluginDisable() {
-
+        this.getReMinecraft().EVENT_BUS.deregisterListener(this);
     }
 
     @Override
@@ -164,7 +186,7 @@ public class Main extends RePlugin implements SimpleListener {
      *  Method to be called at a fixed rate,
      *  writes everything to a file and switches to a new file if needed
      */
-    private void writeToFile() {
+    private synchronized void writeToFile() {
 
         try{
             logger.log("[ChatLogger]: flushing data: " + data.size());
@@ -192,7 +214,6 @@ public class Main extends RePlugin implements SimpleListener {
     }
 }
 
-
 class Config extends Configuration {
     @ConfigSetting
     public int var_whatToDoWithSpam; // 0 does nothing, 1 removes it completely, 2 points to the msg that is repeated
@@ -200,11 +221,28 @@ class Config extends Configuration {
     @ConfigSetting
     public int var_howOldIsSpam; // how long to go back to compare whether msg is repeated
 
+    @ConfigSetting
+    public boolean var_saveAsFile;
+  
+  
+    // v these are var configs for michu`s commit
+    @ConfigSetting
+    public boolean var_saveInDatabase;
+
+    @ConfigSetting
+    public boolean var_outputInDiscord;
+
+
+
     public Config() {
-        super("ReMinecraft");
+        super("ChatLogger");
 
         this.var_whatToDoWithSpam = 2;
         this.var_howOldIsSpam = Integer.MAX_VALUE;
+
+        this.var_saveAsFile = true;
+        this.var_saveInDatabase = true;
+        this.var_outputInDiscord = false;
     }
 
 
