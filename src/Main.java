@@ -67,12 +67,12 @@ public class Main extends RePlugin implements SimpleListener {
 
     @Override
     public void onPluginDisable() {
-        this.getReMinecraft().EVENT_BUS.deregisterListener(this);
+        
     }
 
     @Override
     public void onPluginShutdown() {
-
+        this.getReMinecraft().EVENT_BUS.deregisterListener(this);
     }
 
     @Override
