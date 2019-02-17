@@ -25,9 +25,9 @@ public class Main extends RePlugin implements SimpleListener {
 
     private ArrayList<String> data = new ArrayList<>();
 
-    public ILogger logger = LoggerBuilder.buildProperLogger("ChatLoggerPlugin");
+    public ILogger logger = LoggerBuilder.buildProperLogger("ChatLoggerLog");
 
-    private ScheduledExecutorService executor = Executors.newScheduledThreadPool(2);
+    private ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
 
     @Override
     public void onPluginInit() {
@@ -67,7 +67,7 @@ public class Main extends RePlugin implements SimpleListener {
 
     @Override
     public void onPluginDisable() {
-        
+
     }
 
     @Override
@@ -214,6 +214,7 @@ public class Main extends RePlugin implements SimpleListener {
     }
 }
 
+
 class Config extends Configuration {
     @ConfigSetting
     public int var_whatToDoWithSpam; // 0 does nothing, 1 removes it completely, 2 points to the msg that is repeated
@@ -223,8 +224,8 @@ class Config extends Configuration {
 
     @ConfigSetting
     public boolean var_saveAsFile;
-  
-  
+
+
     // v these are var configs for michu`s commit
     @ConfigSetting
     public boolean var_saveInDatabase;
