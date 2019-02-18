@@ -107,7 +107,6 @@ public class Main extends RePlugin implements SimpleListener {
             return msg;
 
         Msg spam = isSpam(msg);
-        logger.log("spam: " + spam);
 
         if(spam == null) // only values < 0 r no spam
             return msg;
@@ -136,7 +135,7 @@ public class Main extends RePlugin implements SimpleListener {
         for(int i = 0; i < testForSpam.size(); i ++) {
             if(msg.equals(testForSpam.get(i))){
                 spam.add(testForSpam.get(i));
-                logger.log("finally found spam" + i);
+                
                 return testForSpam.get(i);
             }
         }
