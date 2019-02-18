@@ -23,11 +23,16 @@ public class Main extends RePlugin implements SimpleListener {
 
     private Config CFG = new Config();
 
-    private ArrayList<String> data = new ArrayList<>();
+    private ArrayList<Msg> data = new ArrayList<>();
+
+    private LimitedQueue<Msg> testForSpam = new LimitedQueue<>(CFG.var_howOldIsSpam);
+
+    private ArrayList<Msg> spam = new ArrayList<>();
+
 
     public ILogger logger = LoggerBuilder.buildProperLogger("ChatLoggerLog");
 
-    private ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
+    private ScheduledExecutorService executor = Executors.newScheduledThreadPool(2);
 
     @Override
     public void onPluginInit() {
@@ -82,17 +87,8 @@ public class Main extends RePlugin implements SimpleListener {
 
     @SimpleEventHandler
     public void onEvent(ChatReceivedEvent e){
-        String msg = e.getMessageText();
-        long time = e.getTimeRecieved();
 
-        String data = "";
-
-        data += time;
-        data += ": ";
-        data += msg;
-
-        if(CFG.var_whatToDoWithSpam != 0)
-            data = prepareIfSpam(data, CFG.var_whatToDoWithSpam);
+        Msg data = prepareIfSpam(new Msg(e));
 
         // if it is spam and should be left out its null so return if null
         if(data == null)
@@ -101,70 +97,54 @@ public class Main extends RePlugin implements SimpleListener {
 
         this.data.add(data);
 
+        this.testForSpam.add(data);
+
     }
 
-    private String prepareIfSpam(String rV, int whatToDoWithSpam) {
-        int spam = isSpam(rV);
+    private Msg prepareIfSpam(Msg msg) {
 
-        if(spam < 0) // only values < 0 r no spam
-            return rV;
+        if(CFG.var_whatToDoWithSpam == 0)
+            return msg;
 
-        if(whatToDoWithSpam == 1)
+        Msg spam = isSpam(msg);
+        logger.log("spam: " + spam);
+
+        if(spam == null) // only values < 0 r no spam
+            return msg;
+
+        if(CFG.var_whatToDoWithSpam == 1)
             return null;
 
-        if(whatToDoWithSpam == 2) // P for pointer so u know what orig msg it was
-            return "P(" + spam + "): " + rV.split(": ")[0];
+        if(CFG.var_whatToDoWithSpam == 2) // P for pointer so u know what orig msg it was
+            return msg.setExtra("P(", ")").setMsg(spam.time + "");
 
-        return rV;
+        return msg;
     }
 
     /**
      *
-     * @param rV
+     * @param msg
      * @return where the repeated msg is found
      */
-    private int isSpam(String rV) {
-        try {
-            FileReader fr = new FileReader(getFilepath());
-            BufferedReader br = new BufferedReader(fr);
+    private Msg isSpam(Msg msg) {
 
-            int length = getLength(fr);
-            int index = CFG.var_howOldIsSpam;
-
-            int toSkip = length - index;
-            if(toSkip < 0){
-                toSkip = 0;
-            }
-            br.skip(toSkip);
-
-            while(index < length) {
-                if(rV.equals(br.readLine().split(": ")[1])){
-
-                    return index;
-                }
-
-            }
-
-
-
-        } catch (Exception e) {
-            e.printStackTrace();
+        for(int i = 0; i < spam.size(); i ++) {
+            if(msg.equals(spam.get(i)))
+                return spam.get(i);
         }
-        return -1;
-    }
 
-    public int getLength(FileReader input){
-        int rV = 0;
-        try {
-            LineNumberReader count = new LineNumberReader(input);
-            while (count.skip(Long.MAX_VALUE) > 0) {
-                // Loop just in case the file is > Long.MAX_VALUE or skip() decides to not read the entire file
+        for(int i = 0; i < testForSpam.size(); i ++) {
+            if(msg.equals(testForSpam.get(i))){
+                spam.add(testForSpam.get(i));
+                logger.log("finally found spam" + i);
+                return testForSpam.get(i);
             }
+        }
 
-            rV = count.getLineNumber() + 1;                                    // +1 because line index starts at 0
-        } catch(Exception e){}
-        return rV;
+        return null;
     }
+
+
 
     public String getFilepath(){
 
@@ -192,9 +172,9 @@ public class Main extends RePlugin implements SimpleListener {
             logger.log("[ChatLogger]: flushing data: " + data.size());
             FileWriter fw = new FileWriter(getFilepath(), true);
             BufferedWriter bw = new BufferedWriter(fw);
-            for (String line : data) {
+            for (Msg line : data) {
                 bw.newLine();
-                bw.write(line);
+                bw.write(line.toString());
                 bw.flush();
             }
             data = new ArrayList<>();
