@@ -23,24 +23,37 @@ public class Main extends RePlugin implements SimpleListener {
 
     private Config CFG = new Config();
 
-    private ArrayList<Msg> data = new ArrayList<>();
+    private ArrayList<ChatMessage> data = new ArrayList<>();
 
-    private LimitedQueue<Msg> testForSpam = new LimitedQueue<>(CFG.var_howOldIsSpam);
+    private LimitedQueue<ChatMessage> testForSpam = new LimitedQueue<>(CFG.var_howOldIsSpam);
 
-    private ArrayList<Msg> spam = new ArrayList<>();
+    private ArrayList<ChatMessage> spam = new ArrayList<>();
 
 
     public ILogger logger = LoggerBuilder.buildProperLogger("ChatLoggerLog");
 
-    private ScheduledExecutorService executor = Executors.newScheduledThreadPool(2);
+    private ScheduledExecutorService executor;
 
     @Override
     public void onPluginInit() {
+
+        save("start: " + System.currentTimeMillis());
+
+
         this.getReMinecraft().EVENT_BUS.registerListener(this);
+
+
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+
+
+            save("shutdown: " + System.currentTimeMillis());
+        }));
+
     }
 
     @Override
     public void onPluginEnable() {
+        executor = Executors.newScheduledThreadPool(2);
         executor.scheduleAtFixedRate(() -> {
             if (ReClient.ReClientCache.INSTANCE.playerListEntries.size() != 0) {
                 handleData();
@@ -72,7 +85,7 @@ public class Main extends RePlugin implements SimpleListener {
 
     @Override
     public void onPluginDisable() {
-
+        executor.shutdownNow();
     }
 
     @Override
@@ -88,7 +101,7 @@ public class Main extends RePlugin implements SimpleListener {
     @SimpleEventHandler
     public void onEvent(ChatReceivedEvent e){
 
-        Msg data = prepareIfSpam(new Msg(e));
+        ChatMessage data = prepareIfSpam(new ChatMessage(e));
 
         // if it is spam and should be left out its null so return if null
         if(data == null)
@@ -101,12 +114,12 @@ public class Main extends RePlugin implements SimpleListener {
 
     }
 
-    private Msg prepareIfSpam(Msg msg) {
+    private ChatMessage prepareIfSpam(ChatMessage msg) {
 
         if(CFG.var_whatToDoWithSpam == 0)
             return msg;
 
-        Msg spam = isSpam(msg);
+        ChatMessage spam = isSpam(msg);
 
         if(spam == null) // only values < 0 r no spam
             return msg;
@@ -115,7 +128,8 @@ public class Main extends RePlugin implements SimpleListener {
             return null;
 
         if(CFG.var_whatToDoWithSpam == 2) // P for pointer so u know what orig msg it was
-            return msg.setExtra("P(", ")").setMsg(spam.time + "");
+            return msg.setLink(spam.time + "");
+
 
         return msg;
     }
@@ -125,7 +139,7 @@ public class Main extends RePlugin implements SimpleListener {
      * @param msg
      * @return where the repeated msg is found
      */
-    private Msg isSpam(Msg msg) {
+    private ChatMessage isSpam(ChatMessage msg) {
 
         for(int i = 0; i < spam.size(); i ++) {
             if(msg.equals(spam.get(i)))
@@ -135,7 +149,6 @@ public class Main extends RePlugin implements SimpleListener {
         for(int i = 0; i < testForSpam.size(); i ++) {
             if(msg.equals(testForSpam.get(i))){
                 spam.add(testForSpam.get(i));
-                
                 return testForSpam.get(i);
             }
         }
@@ -161,6 +174,26 @@ public class Main extends RePlugin implements SimpleListener {
     }
 
 
+
+    public void save(String data){
+        try{
+            FileWriter fw = new FileWriter(getFilepath(), true);
+            BufferedWriter bw = new BufferedWriter(fw);
+
+            bw.newLine();
+            bw.write(data);
+
+            bw.flush();
+            fw.flush();
+            bw.close();
+            fw.close();
+        } catch (IOException e) {
+
+            e.printStackTrace();
+        }
+    }
+
+
     /**
      *  Method to be called at a fixed rate,
      *  writes everything to a file and switches to a new file if needed
@@ -171,7 +204,7 @@ public class Main extends RePlugin implements SimpleListener {
             logger.log("[ChatLogger]: flushing data: " + data.size());
             FileWriter fw = new FileWriter(getFilepath(), true);
             BufferedWriter bw = new BufferedWriter(fw);
-            for (Msg line : data) {
+            for (ChatMessage line : data) {
                 bw.newLine();
                 bw.write(line.toString());
                 bw.flush();
